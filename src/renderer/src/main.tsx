@@ -1,11 +1,9 @@
-import './assets/main.css'
+import './main.css'
 
-import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import App from './App'
+import { createHashRouter, RouterProvider } from 'react-router-dom'
+import { initRoutes } from './utils/pagerouter'
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>
-)
+const router = createHashRouter(initRoutes())
+
+createRoot(document.getElementById('root')!).render(<RouterProvider router={router} />)
