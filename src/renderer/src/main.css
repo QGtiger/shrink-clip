@@ -24,6 +24,11 @@
   box-sizing: border-box;
 }
 
+button {
+  cursor: pointer;
+  app-region: no-drag;
+}
+
 body {
   font-family:
     Inter,
@@ -46,4 +51,8 @@ body {
 #root {
   height: 100vh;
   overflow: hidden;
+}
+
+.ant-select-selector {
+  padding: 0 !important;
 }

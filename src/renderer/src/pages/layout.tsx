@@ -33,7 +33,7 @@ export default function Layout() {
     >
       <App className="h-full">
         <div
-          className=" h-full app-drag   overflow-hidden bg-[#7e7d77]  p-4 text-white"
+          className=" rounded-xl border-2 border-solid border-[#55486c] h-full app-drag   overflow-hidden bg-[#170d27]  p-4 text-white"
           ref={pageRef}
         >
           {outlet}

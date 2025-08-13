@@ -6,6 +6,7 @@ type ChannelInvokeMap = {
   }
   winClose: void
   selectVideoFile: void
+  compressVideo: CompressVideoInterface
 }
 
 type ChannelHandlelMap = {
@@ -13,6 +14,10 @@ type ChannelHandlelMap = {
   winSetSize: void
   winClose: void
   selectVideoFile: string | undefined
+  compressVideo: {
+    output: string
+    error?: string
+  }
 }
 
 type ChannelName = keyof ChannelInvokeMap
@@ -20,3 +25,20 @@ type ChannelName = keyof ChannelInvokeMap
 type ChannelInvokeData<T extends ChannelName> = ChannelInvokeMap[T]
 
 type ChannelHandleData<T extends ChannelName> = Promise<ChannelHandlelMap[T]>
+
+interface CompressVideoInterface {
+  input: string
+  preset:
+    | 'ultrafast'
+    | 'superfast'
+    | 'veryfast'
+    | 'faster'
+    | 'fast'
+    | 'medium'
+    | 'slow'
+    | 'slower'
+    | 'veryslow'
+  crf: number
+  resolution: 'original' | '1080p' | '720p' | '480p' | '360p'
+  fps?: 'original' | number
+}
