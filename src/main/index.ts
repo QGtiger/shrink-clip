@@ -8,8 +8,8 @@ import { initEvents } from './events'
 function createWindow(): void {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    width: 300,
-    height: 300,
+    width: 800,
+    height: 560,
     show: false,
     autoHideMenuBar: true,
 
@@ -17,8 +17,6 @@ function createWindow(): void {
     transparent: true,
     resizable: false,
     // hasShadow: false,
-
-    alwaysOnTop: true,
 
     vibrancy: 'fullscreen-ui', // on MacOS
     backgroundMaterial: 'acrylic', // on Windows 11

@@ -17,7 +17,6 @@ type ChannelHandlelMap = {
   selectVideoFile: string | undefined
   compressVideo: {
     output: string
-    error?: string
   }
   compressVideoCancel: void
 }
@@ -25,8 +24,6 @@ type ChannelHandlelMap = {
 type ChannelName = keyof ChannelInvokeMap
 
 type ChannelInvokeData<T extends ChannelName> = ChannelInvokeMap[T]
-
-type ChannelHandleData<T extends ChannelName> = Promise<ChannelHandlelMap[T]>
 
 interface CompressVideoInterface {
   input: string

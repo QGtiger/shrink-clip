@@ -1,7 +1,6 @@
 import RotatingText from '@renderer/components/RotatingText'
 import ShinyText from '@renderer/components/ShinyText'
 import { useWindowSize } from '@renderer/hooks/useWindowSize'
-import { sendToMainByIPC } from '@renderer/utils'
 import { Button } from 'antd'
 import { useNavigate } from 'react-router-dom'
 
@@ -50,20 +49,6 @@ export default function Home() {
           </Button>
         </div>
       </div>
-    </div>
-  )
-
-  return (
-    <div className=" font-semibold">
-      <Button
-        className="app-drag-none"
-        type="primary"
-        onClick={() => {
-          sendToMainByIPC('selectVideoFile').then(console.log)
-        }}
-      >
-        获取文件
-      </Button>
     </div>
   )
 }

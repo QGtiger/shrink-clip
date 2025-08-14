@@ -21,16 +21,28 @@ export function hanleEventByRenderer<T extends ChannelName>(
     ev: Electron.IpcMainInvokeEvent & {
       data: ChannelInvokeData<T>
     }
-  ) => ChannelHandleData<T>
+  ) => Promise<ChannelHandlelMap[T]>
 ): void {
   ipcMain.handle(channel, (event, arg) => {
     log.info(`Received IPC event by Invoke: ${channel}`, arg)
     return listener({
       ...event,
       data: arg
-    }).then((d) => {
-      log.info(`Response for IPC event ${channel}:`, d)
-      return d
-    })
+    }).then(
+      (d) => {
+        log.info(`Response for IPC event ${channel}:`, d)
+        return {
+          success: true,
+          data: d
+        }
+      },
+      (error) => {
+        log.error(`Error handling IPC event ${channel}:`, error)
+        return {
+          success: false,
+          msg: error instanceof Error ? error.message : String(error)
+        }
+      }
+    )
   })
 }

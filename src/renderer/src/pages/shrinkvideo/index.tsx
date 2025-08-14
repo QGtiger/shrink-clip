@@ -38,8 +38,8 @@ function SelectFile({
         className="!px-4"
         icon={<FolderClosed className="mt-1 px-0.5" />}
         onClick={() => {
-          sendToMainByIPC('selectVideoFile').then((f) => {
-            onChange?.(f)
+          sendToMainByIPC('selectVideoFile').then(({ data }) => {
+            onChange?.(data)
           })
         }}
       ></Button>
@@ -66,29 +66,31 @@ function CompressionProgress({
 }) {
   const [percent, setPercent] = useState(0)
   const infiniteProgressBarRef = useRef<InfiniteProgressBar | null>(null)
+  const isExitRef = useRef(false)
 
   useEffect(() => {
-    sendToMainByIPC('compressVideo', compressionConfig).then((r) => {
-      if (r.error) {
-        console.error('Compression error:', r.error)
-        createMessage({
-          type: 'error',
-          content: `压缩失败: ${r.error}`,
-          duration: 5
-        })
-      } else {
+    sendToMainByIPC('compressVideo', compressionConfig).then(({ data, success, msg }) => {
+      if (success) {
         setPercent(100)
 
         createMessage({
           type: 'success',
           content: (
             <span>
-              视频压缩完成(<Typography.Link>{r.output}</Typography.Link>)
+              视频压缩完成(<Typography.Link>{data.output}</Typography.Link>)
             </span>
           ),
           duration: 3
         })
         onClose?.()
+      } else {
+        infiniteProgressBarRef.current?.stop()
+        isExitRef.current ||
+          createMessage({
+            type: 'error',
+            content: `视频压缩失败: ${msg || '未知错误'}`,
+            duration: 5
+          })
       }
     })
     window.electron.ipcRenderer.on('compressVideoProgress', (event, data) => {
@@ -123,7 +125,11 @@ function CompressionProgress({
           <div>{name}</div>
         </div>
         <CloseOutlined
-          onClick={onClose}
+          onClick={() => {
+            isExitRef.current = true
+            sendToMainByIPC('compressVideoCancel')
+            onClose?.()
+          }}
           className="p-2 hover:bg-gray-300 rounded-md cursor-pointer"
         />
       </div>
@@ -160,7 +166,6 @@ export default function ShrinkVideo() {
         content: (
           <CompressionProgress
             onClose={() => {
-              sendToMainByIPC('compressVideoCancel')
               modalIns.destroy()
             }}
             compressionConfig={values}

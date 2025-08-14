@@ -12,23 +12,17 @@ import {
 import ffmpeg from 'fluent-ffmpeg'
 import path from 'path'
 
-// Set the path for ffmpeg
-ffmpegPath && ffmpeg.setFfmpegPath(ffmpegPath)
+// 替换 asar 为 asar.unpacked 以获取解压目录
+const unpackedFfmpegPath = ffmpegPath.replace('app.asar', 'app.asar.unpacked')
 
-log.info('FFmpeg Path:', ffmpegPath)
+// Set the path for ffmpeg
+unpackedFfmpegPath && ffmpeg.setFfmpegPath(unpackedFfmpegPath)
+
+log.info('FFmpeg Path:', ffmpegPath, unpackedFfmpegPath)
 log.info('FFmpeg Version:', ffmpegVersion)
 log.info('FFmpeg URL:', ffmpegUrl)
 
 let ffmpegCommandInstance: ffmpeg.FfmpegCommand | null = null
-
-// 根据时间戳估算进度
-function calculateProgressFromTimemark(timemark: string, totalDuration: number) {
-  if (!timemark || !totalDuration) return 0
-
-  const [hh, mm, ss] = timemark.split(':').map(parseFloat)
-  const currentTime = hh * 3600 + mm * 60 + ss
-  return Math.min(100, (currentTime / totalDuration) * 100)
-}
 
 export function initEvents() {
   hanleEventByRenderer('winSetSize', async (event) => {
@@ -42,14 +36,13 @@ export function initEvents() {
   })
 
   hanleEventByRenderer('compressVideo', async (event) => {
-    return new Promise(async (resolve, reject) => {
+    return new Promise((resolve, reject) => {
       const { input, preset, crf, resolution, fps } = event.data
       const { sender } = event
       const mainWindow = BrowserWindow.fromId(sender.id)
 
       if (!mainWindow) {
-        reject({ error: 'Main window not found' })
-        return
+        throw new Error('Main window not found')
       }
       const exts = path.extname(input)
 
@@ -57,25 +50,6 @@ export function initEvents() {
         path.dirname(input),
         `${path.basename(input, path.extname(input))}-small${exts}`
       )
-
-      const totalDuration = await new Promise<number>((r) => {
-        ffmpeg.ffprobe(event.data.input, (err, metadata) => {
-          if (err) {
-            r(0)
-          } else {
-            log.info('Video metadata:', metadata)
-            const duration = metadata.format.duration || 0
-            log.info('Video duration:', duration)
-            r(duration)
-          }
-        })
-      })
-
-      // webm 格式不支持 无法获取到 duration 获取的事 ‘N/A’
-      if (!totalDuration) {
-        reject({ error: 'Failed to retrieve video duration' })
-        return
-      }
 
       const command = (ffmpegCommandInstance = ffmpeg(input).output(outputPath))
 
@@ -104,26 +78,24 @@ export function initEvents() {
 
       console.log(outputOptions)
 
-      const invalidDuration = typeof totalDuration !== 'number'
-
-      if (invalidDuration) {
-        // 如果无法获取到视频时长，使用无限进度条
-        mainWindow.webContents.send('infiniteProgress')
-      }
+      let invalidDuration = false
 
       command
         .outputOptions(outputOptions)
         .on('progress', (progress) => {
           if (invalidDuration) return
-          // 使用 timemark 作为替代进度指标
-          const percent =
-            progress.percent !== undefined
-              ? progress.percent
-              : calculateProgressFromTimemark(progress.timemark, totalDuration)
+          const { percent, timemark } = progress
+          if (percent === undefined) {
+            invalidDuration = true
+
+            // 如果无法获取到视频时长，使用无限进度条
+            mainWindow.webContents.send('infiniteProgress')
+            return
+          }
 
           mainWindow.webContents.send('compressVideoProgress', {
             percent,
-            time: progress.timemark
+            timemark
           })
         })
         .on('end', () => {
@@ -131,13 +103,10 @@ export function initEvents() {
           resolve({ output: outputPath })
         })
         .on('error', (err) => {
-          // console.error('Error processing video:', err)
-          reject({ error: err.message })
+          reject(err.message || 'Error processing video')
         })
 
       command.run()
-
-      // command.kill('SIGINT') // 终止命令
     })
   })
 
@@ -169,53 +138,6 @@ export function initEvents() {
           return
         }
         const filePath = result.filePaths[0]
-        // console.log('selectVideoFile', filePath)
-
-        // const exts = path.extname(filePath)
-
-        // const outputPath = path.join(
-        //   path.dirname(filePath),
-        //   `${path.basename(filePath, path.extname(filePath))}-small${exts}`
-        // )
-
-        // console.log('outputPath', path.dirname(filePath), outputPath)
-
-        // // ffmpeg(filePath)
-        // //   .outputOptions('-vf', 'scale=320:240')
-        // //   .save(`${filePath}-small.mp4`)
-        // //   .on('end', () => {
-        // //     console.log('Video resized successfully')
-        // //   })
-        // //   .on('error', (err) => {
-        // //     console.error('Error resizing video:', err)
-        // //   })
-
-        // console.log('ffmpegPath', ffmpegPath)
-
-        // // 验证FFmpeg可用性
-        // if (!ffmpegPath || !fs.existsSync(ffmpegPath)) {
-        //   throw new Error('FFmpeg binary not found')
-        // }
-
-        // const command = ffmpeg(filePath)
-        //   .output(outputPath)
-        //   .outputOptions([
-        //     '-crf 23', // 质量系数 (0-51)
-        //     '-preset medium' // 编码速度/质量平衡
-        //     // '-pix_fmt yuv420p', // 像素格式
-        //     // '-movflags faststart' // 流媒体优化
-        //   ])
-        //   .on('progress', (progress) => {
-        //     console.log(`Processing: ${progress.percent}% done`, progress)
-        //   })
-        //   .on('end', () => {
-        //     console.log('Video processing finished successfully')
-        //   })
-        //   .on('error', (err) => {
-        //     console.error('Error processing video:', err)
-        //   })
-
-        // command.run()
 
         return filePath
       })
