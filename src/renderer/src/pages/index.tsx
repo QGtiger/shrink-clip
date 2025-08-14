@@ -16,7 +16,7 @@ export default function Home() {
           Shrink
           <RotatingText
             texts={['Video', 'Image']}
-            mainClassName="  px-2 sm:px-2 md:px-3 bg-[#4c29f5] overflow-hidden py-0.5 sm:py-1 md:py-2 justify-center rounded-lg"
+            mainClassName="   px-2 sm:px-2 md:px-3 bg-[#4c29f5] overflow-hidden py-0.5  pt-2 pb-1 justify-center rounded-lg"
             staggerFrom={'last'}
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
