@@ -1,5 +1,7 @@
 # shrink-clip
 
+icon 生成工具: https://logofa.st/
+
 An Electron application with React and TypeScript
 
 ## ffmpeg 压缩
