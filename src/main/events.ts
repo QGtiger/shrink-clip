@@ -1,6 +1,8 @@
 import { BrowserWindow, dialog } from 'electron'
 import { hanleEventByRenderer } from './utils'
 
+import log from 'electron-log/main'
+
 import {
   path as ffmpegPath,
   version as ffmpegVersion,
@@ -13,9 +15,9 @@ import path from 'path'
 // Set the path for ffmpeg
 ffmpegPath && ffmpeg.setFfmpegPath(ffmpegPath)
 
-console.log('FFmpeg Path:', ffmpegPath)
-console.log('FFmpeg Version:', ffmpegVersion)
-console.log('FFmpeg URL:', ffmpegUrl)
+log.info('FFmpeg Path:', ffmpegPath)
+log.info('FFmpeg Version:', ffmpegVersion)
+log.info('FFmpeg URL:', ffmpegUrl)
 
 let ffmpegCommandInstance: ffmpeg.FfmpegCommand | null = null
 
@@ -61,9 +63,9 @@ export function initEvents() {
           if (err) {
             r(0)
           } else {
-            console.log('Video metadata:', metadata)
+            log.info('Video metadata:', metadata)
             const duration = metadata.format.duration || 0
-            console.log('Video duration:', duration)
+            log.info('Video duration:', duration)
             r(duration)
           }
         })

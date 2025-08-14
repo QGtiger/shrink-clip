@@ -1,4 +1,5 @@
 import { ipcMain } from 'electron'
+import log from 'electron-log/main'
 
 export function dataURLtoBlob(dataUrl: string): Blob {
   const arr = dataUrl.split(',')
@@ -23,10 +24,13 @@ export function hanleEventByRenderer<T extends ChannelName>(
   ) => ChannelHandleData<T>
 ): void {
   ipcMain.handle(channel, (event, arg) => {
-    console.log(`Received IPC event by Invoke: ${channel}`, arg)
+    log.info(`Received IPC event by Invoke: ${channel}`, arg)
     return listener({
       ...event,
       data: arg
+    }).then((d) => {
+      log.info(`Response for IPC event ${channel}:`, d)
+      return d
     })
   })
 }

@@ -29,6 +29,9 @@ importers:
       electron-icon-builder:
         specifier: ^2.0.1
         version: 2.0.1
+      electron-log:
+        specifier: ^5.4.2
+        version: 5.4.2
       electron-updater:
         specifier: ^6.3.9
         version: 6.6.2
@@ -1801,6 +1804,10 @@ packages:
     resolution: {integrity: sha512-rg9BxW2kJi3TXsMFFNXWXrwQEd5dzXmeD+w7Pj3k3z7aYRePLxE89qU4lvL/rK1X/NTY5KDn3+Dbgm1TU2dGXQ==}
     engines: {node: '>= 10.0.0'}
     hasBin: true
+
+  electron-log@5.4.2:
+    resolution: {integrity: sha512-L55kJzbVVoBY6kyJ3A+cjPchL1aXLdV2/Q8SvIj4sE5VmOcwZa6KXaFICZE+Z+RMXhAIFta79kSaXBqn+0XXMA==}
+    engines: {node: '>= 14'}
 
   electron-publish@25.1.7:
     resolution: {integrity: sha512-+jbTkR9m39eDBMP4gfbqglDd6UvBC7RLh5Y0MhFSsc6UkGHj9Vj9TWobxevHYMMqmoujL11ZLjfPpMX+Pt6YEg==}
@@ -6306,6 +6313,8 @@ snapshots:
     transitivePeerDependencies:
       - debug
       - supports-color
+
+  electron-log@5.4.2: {}
 
   electron-publish@25.1.7:
     dependencies:
