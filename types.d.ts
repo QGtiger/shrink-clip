@@ -7,6 +7,7 @@ type ChannelInvokeMap = {
   winClose: void
   selectVideoFile: void
   compressVideo: CompressVideoInterface
+  compressVideoCancel: void
 }
 
 type ChannelHandlelMap = {
@@ -18,6 +19,7 @@ type ChannelHandlelMap = {
     output: string
     error?: string
   }
+  compressVideoCancel: void
 }
 
 type ChannelName = keyof ChannelInvokeMap

@@ -1,7 +1,23 @@
+import { CloseOutlined } from '@ant-design/icons'
+import DecryptedText from '@renderer/components/DecryptedText'
 import { sendToMainByIPC } from '@renderer/utils'
+import { createMessage } from '@renderer/utils/customMessage'
+import { createModal } from '@renderer/utils/customModal'
+import { InfiniteProgressBar } from '@renderer/utils/infiniteProgress'
 import { useRequest } from 'ahooks'
-import { Button, ConfigProvider, Form, Input, InputProps, Select, Slider } from 'antd'
-import { FolderClosed } from 'lucide-react'
+import {
+  Button,
+  ConfigProvider,
+  Form,
+  Input,
+  InputProps,
+  Progress,
+  Select,
+  Slider,
+  Typography
+} from 'antd'
+import { FolderClosed, Video } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 function SelectFile({
@@ -39,6 +55,96 @@ const intialValues: CompressVideoInterface = {
   fps: 'original'
 }
 
+function CompressionProgress({
+  onClose,
+  name,
+  compressionConfig
+}: {
+  name: string
+  onClose?: () => void
+  compressionConfig: CompressVideoInterface
+}) {
+  const [percent, setPercent] = useState(0)
+  const infiniteProgressBarRef = useRef<InfiniteProgressBar | null>(null)
+
+  useEffect(() => {
+    sendToMainByIPC('compressVideo', compressionConfig).then((r) => {
+      if (r.error) {
+        console.error('Compression error:', r.error)
+        createMessage({
+          type: 'error',
+          content: `压缩失败: ${r.error}`,
+          duration: 5
+        })
+      } else {
+        setPercent(100)
+
+        createMessage({
+          type: 'success',
+          content: (
+            <span>
+              视频压缩完成(<Typography.Link>{r.output}</Typography.Link>)
+            </span>
+          ),
+          duration: 3
+        })
+        onClose?.()
+      }
+    })
+    window.electron.ipcRenderer.on('compressVideoProgress', (event, data) => {
+      setPercent(+Math.round(data.percent || 0).toFixed(2))
+    })
+
+    window.electron.ipcRenderer.on('infiniteProgress', () => {
+      const infiniteProgressBar = (infiniteProgressBarRef.current = new InfiniteProgressBar(
+        (progress) => {
+          setPercent(+progress.toFixed(2))
+        }
+      ))
+      infiniteProgressBar.start()
+    })
+
+    return () => {
+      window.electron.ipcRenderer.removeAllListeners('compressVideoProgress')
+      window.electron.ipcRenderer.removeAllListeners('infiniteProgress')
+
+      infiniteProgressBarRef.current?.stop()
+    }
+  }, [])
+
+  return (
+    <div className="flex gap-4 flex-col p-2 -mr-4">
+      <div className="flex gap-4 items-center">
+        <div className=" p-2 flex items-center justify-center w-11 h-11 bg-[#4d88f6] rounded-xl">
+          <Video className=" text-white" />
+        </div>
+        <div className="flex flex-col w-1 flex-1">
+          <div className=" font-semibold text-lg">正在压缩视频</div>
+          <div>{name}</div>
+        </div>
+        <CloseOutlined
+          onClick={onClose}
+          className="p-2 hover:bg-gray-300 rounded-md cursor-pointer"
+        />
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <div className="flex justify-between">
+          <div className="text-sm text-gray-500">压缩进度</div>
+          <div className="text-sm text-gray-500">{percent}%</div>
+        </div>
+
+        <Progress percent={percent} type="line" showInfo={false} />
+      </div>
+
+      <div className="flex justify-center flex-col items-center text-center text-gray-500">
+        <div className=" text-gray-500">请稍后，正在处理您的视频文件</div>
+        <div className="text-xs">预计还需好多好多时间</div>
+      </div>
+    </div>
+  )
+}
+
 export default function ShrinkVideo() {
   const nav = useNavigate()
   const [form] = Form.useForm()
@@ -48,8 +154,25 @@ export default function ShrinkVideo() {
   const { loading, run: onSubmit } = useRequest(
     async () => {
       const values = await form.validateFields()
-      const res = await sendToMainByIPC('compressVideo', values)
-      console.log(res)
+
+      const modalIns = createModal({
+        icon: null,
+        content: (
+          <CompressionProgress
+            onClose={() => {
+              sendToMainByIPC('compressVideoCancel')
+              modalIns.destroy()
+            }}
+            compressionConfig={values}
+            name={values.input ? values.input.split('/').pop() || '视频文件' : '视频文件'}
+          />
+        ),
+        footer: null,
+        centered: true,
+        bodyStyle: {
+          padding: 0
+        }
+      })
     },
     {
       manual: true
@@ -94,9 +217,16 @@ export default function ShrinkVideo() {
             }
           }}
         >
+          <div className="text-xl font-semibold app-drag mb-10">
+            <DecryptedText
+              text="Hi, Welcome to Video Compression"
+              animateOn="view"
+              revealDirection="center"
+            />
+          </div>
           <Form
             form={form}
-            className=" app-drag-none w-full"
+            className=" app-drag-none w-full "
             layout="vertical"
             initialValues={intialValues}
           >

@@ -1,11 +1,32 @@
 import { BrowserWindow, dialog } from 'electron'
 import { hanleEventByRenderer } from './utils'
-import ffmpegPath from 'ffmpeg-static'
+
+import {
+  path as ffmpegPath,
+  version as ffmpegVersion,
+  url as ffmpegUrl
+} from '@ffmpeg-installer/ffmpeg'
+
 import ffmpeg from 'fluent-ffmpeg'
 import path from 'path'
 
 // Set the path for ffmpeg
 ffmpegPath && ffmpeg.setFfmpegPath(ffmpegPath)
+
+console.log('FFmpeg Path:', ffmpegPath)
+console.log('FFmpeg Version:', ffmpegVersion)
+console.log('FFmpeg URL:', ffmpegUrl)
+
+let ffmpegCommandInstance: ffmpeg.FfmpegCommand | null = null
+
+// 根据时间戳估算进度
+function calculateProgressFromTimemark(timemark: string, totalDuration: number) {
+  if (!timemark || !totalDuration) return 0
+
+  const [hh, mm, ss] = timemark.split(':').map(parseFloat)
+  const currentTime = hh * 3600 + mm * 60 + ss
+  return Math.min(100, (currentTime / totalDuration) * 100)
+}
 
 export function initEvents() {
   hanleEventByRenderer('winSetSize', async (event) => {
@@ -19,8 +40,15 @@ export function initEvents() {
   })
 
   hanleEventByRenderer('compressVideo', async (event) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       const { input, preset, crf, resolution, fps } = event.data
+      const { sender } = event
+      const mainWindow = BrowserWindow.fromId(sender.id)
+
+      if (!mainWindow) {
+        reject({ error: 'Main window not found' })
+        return
+      }
       const exts = path.extname(input)
 
       const outputPath = path.join(
@@ -28,7 +56,26 @@ export function initEvents() {
         `${path.basename(input, path.extname(input))}-small${exts}`
       )
 
-      const command = ffmpeg(input).output(outputPath)
+      const totalDuration = await new Promise<number>((r) => {
+        ffmpeg.ffprobe(event.data.input, (err, metadata) => {
+          if (err) {
+            r(0)
+          } else {
+            console.log('Video metadata:', metadata)
+            const duration = metadata.format.duration || 0
+            console.log('Video duration:', duration)
+            r(duration)
+          }
+        })
+      })
+
+      // webm 格式不支持 无法获取到 duration 获取的事 ‘N/A’
+      if (!totalDuration) {
+        reject({ error: 'Failed to retrieve video duration' })
+        return
+      }
+
+      const command = (ffmpegCommandInstance = ffmpeg(input).output(outputPath))
 
       const outputOptions: string[] = [
         `-crf ${crf}`, // 质量系数 (0-51)
@@ -55,21 +102,52 @@ export function initEvents() {
 
       console.log(outputOptions)
 
+      const invalidDuration = typeof totalDuration !== 'number'
+
+      if (invalidDuration) {
+        // 如果无法获取到视频时长，使用无限进度条
+        mainWindow.webContents.send('infiniteProgress')
+      }
+
       command
         .outputOptions(outputOptions)
         .on('progress', (progress) => {
-          console.log(`Processing: ${progress.percent}% done`, progress)
+          if (invalidDuration) return
+          // 使用 timemark 作为替代进度指标
+          const percent =
+            progress.percent !== undefined
+              ? progress.percent
+              : calculateProgressFromTimemark(progress.timemark, totalDuration)
+
+          mainWindow.webContents.send('compressVideoProgress', {
+            percent,
+            time: progress.timemark
+          })
         })
         .on('end', () => {
           console.log('Video processing finished successfully')
           resolve({ output: outputPath })
         })
         .on('error', (err) => {
-          console.error('Error processing video:', err)
+          // console.error('Error processing video:', err)
           reject({ error: err.message })
         })
 
       command.run()
+
+      // command.kill('SIGINT') // 终止命令
+    })
+  })
+
+  hanleEventByRenderer('compressVideoCancel', async () => {
+    return new Promise((resolve) => {
+      if (ffmpegCommandInstance) {
+        ffmpegCommandInstance.kill('SIGINT') // 终止命令
+        ffmpegCommandInstance = null
+        resolve()
+      } else {
+        resolve()
+      }
     })
   })
 

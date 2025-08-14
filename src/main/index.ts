@@ -3,6 +3,7 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { initEvents } from './events'
+// import electronVibrancy from 'electron-vibrancy'
 
 function createWindow(): void {
   // Create the browser window.
@@ -15,7 +16,13 @@ function createWindow(): void {
     frame: false,
     transparent: true,
     resizable: false,
-    hasShadow: false,
+    // hasShadow: false,
+
+    alwaysOnTop: true,
+
+    vibrancy: 'fullscreen-ui', // on MacOS
+    backgroundMaterial: 'acrylic', // on Windows 11
+    visualEffectState: 'active',
 
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
@@ -40,6 +47,8 @@ function createWindow(): void {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
+
+  // electronVibrancy.SetVibrancy(mainWindow, 0)
 }
 
 // This method will be called when Electron has finished

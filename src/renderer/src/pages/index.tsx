@@ -1,4 +1,5 @@
 import RotatingText from '@renderer/components/RotatingText'
+import ShinyText from '@renderer/components/ShinyText'
 import { useWindowSize } from '@renderer/hooks/useWindowSize'
 import { sendToMainByIPC } from '@renderer/utils'
 import { Button } from 'antd'
@@ -35,7 +36,7 @@ export default function Home() {
             className="app-drag-none text-gray-200"
             type="primary"
           >
-            视频 压缩
+            <ShinyText text="视频 压缩" />
           </Button>
           <Button
             onClick={() => {
@@ -45,7 +46,7 @@ export default function Home() {
             className="app-drag-none text-gray-200"
             type="primary"
           >
-            图片 压缩
+            <ShinyText text="图片 压缩" />
           </Button>
         </div>
       </div>
